@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Кинематика — калькулятор</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0a0a0b;
+    --surface:   #131316;
+    --surface-2: #1a1a1f;
+    --border:    #26262c;
+    --border-2:  #33333b;
+    --text:      #ededef;
+    --text-dim:  #8b8b96;
+    --text-mute: #5c5c66;
+    --accent:    #7c5cff;
+    --accent-2:  #a78bfa;
+    --accent-bg: rgba(124, 92, 255, 0.12);
+    --danger:    #f87171;
+    --radius:    10px;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    min-height: 100vh;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    border-bottom: 1px solid var(--border);
+    background: rgba(10, 10, 11, 0.85);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .topbar-inner {
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 0.9rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    font-weight: 600;
+    font-size: 1rem;
+    letter-spacing: -.01em;
+  }
+
+  .logo-mark {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, var(--accent), #3b82f6);
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 6px 20px -6px var(--accent);
+  }
+
+  .logo-text small {
+    display: block;
+    font-weight: 400;
+    font-size: .72rem;
+    color: var(--text-mute);
+    letter-spacing: .02em;
+    line-height: 1;
+    margin-top: 2px;
+  }
+
+  .topbar-meta {
+    margin-left: auto;
+    font-size: .78rem;
+    color: var(--text-mute);
+    font-family: ui-monospace, monospace;
+    padding: .3rem .65rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+  }
+
+  .layout {
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 4rem;
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 820px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 75px;
+    align-self: start;
+    height: fit-content;
+  }
+
+  .sidebar-label {
+    font-size: .7rem;
+    color: var(--text-mute);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    font-weight: 500;
+    padding: 0 .75rem;
+    margin-bottom: .5rem;
+  }
+
+  .topic-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .topic-btn {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: .55rem .75rem;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-dim);
+    font-size: .88rem;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background .12s, color .12s;
+    width: 100%;
+  }
+
+  .topic-btn:hover {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+
+  .topic-btn.active {
+    background: var(--accent-bg);
+    color: var(--accent-2);
+  }
+
+  .topic-btn .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-mute);
+    flex-shrink: 0;
+    transition: background .12s, box-shadow .12s;
+  }
+
+  .topic-btn.active .dot {
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  @media (max-width: 820px) {
+    .sidebar { position: static; }
+    .topic-list {
+      flex-direction: row;
+      overflow-x: auto;
+      padding-bottom: .5rem;
+      gap: .35rem;
+    }
+    .topic-btn {
+      flex: 0 0 auto;
+      white-space: nowrap;
+      border: 1px solid var(--border);
+      padding: .45rem .8rem;
+      font-size: .82rem;
+    }
+    .topic-btn.active { border-color: var(--accent); }
+  }
+
+  .content {
+    display: grid;
+    gap: 1.25rem;
+    min-width: 0;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .panel-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: -.01em;
+  }
+
+  .panel-desc {
+    font-size: .85rem;
+    color: var(--text-dim);
+    margin-top: .25rem;
+    line-height: 1.5;
+  }
+
+  .badge {
+    font-size: .7rem;
+    font-family: ui-monospace, monospace;
+    padding: .2rem .5rem;
+    border-radius: 6px;
+    background: var(--surface-2);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .input-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: .75rem;
+  }
+
+  .field label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .5rem;
+    font-size: .78rem;
+    color: var(--text-dim);
+    margin-bottom: .35rem;
+    font-weight: 500;
+  }
+
+  .field label .unit {
+    font-family: ui-monospace, monospace;
+    font-size: .72rem;
+    color: var(--text-mute);
+    font-weight: 400;
+  }
+
+  .field input {
+    width: 100%;
+    padding: .55rem .7rem;
+    background: var(--bg);
+    border: 1px solid var(--border-2);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: .95rem;
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    transition: border-color .12s, box-shadow .12s;
+  }
+
+  .field input::placeholder { color: var(--text-mute); }
+
+  .field input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-bg);
+  }
+
+  .field input::-webkit-outer-spin-button,
+  .field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .field input[type=number] { -moz-appearance: textfield; }
+
+  .actions {
+    display: flex;
+    gap: .55rem;
+    margin-top: 1.1rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .55rem 1rem;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: .87rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: .12s;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 8px 24px -10px var(--accent);
+  }
+  .btn-primary:hover { background: #6b4cf0; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-dim);
+    border-color: var(--border-2);
+  }
+  .btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+
+  .btn kbd {
+    font-family: ui-monospace, monospace;
+    font-size: .7rem;
+    padding: .1rem .35rem;
+    border-radius: 4px;
+    background: rgba(255,255,255,.12);
+    color: inherit;
+  }
+
+  .result-grid {
+    display: grid;
+    gap: .6rem;
+  }
+
+  .result {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    padding: .8rem 1rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    animation: fadeIn .25s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-3px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .result-main { flex: 1; min-width: 0; }
+  .result-title {
+    font-size: .8rem;
+    color: var(--text-dim);
+    margin-bottom: .15rem;
+  }
+  .result-value {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    letter-spacing: -.02em;
+  }
+  .result-value .unit {
+    font-size: .85rem;
+    color: var(--text-dim);
+    font-weight: 400;
+    margin-left: .15rem;
+  }
+  .result-formula {
+    font-family: ui-monospace, monospace;
+    font-size: .76rem;
+    color: var(--text-mute);
+    margin-top: .25rem;
+  }
+  .result-var {
+    font-family: ui-monospace, monospace;
+    font-size: .78rem;
+    color: var(--accent-2);
+    padding: .15rem .45rem;
+    border-radius: 5px;
+    background: var(--accent-bg);
+    white-space: nowrap;
+    align-self: center;
+  }
+
+  .placeholder {
+    color: var(--text-mute);
+    font-style: italic;
+    font-size: .9rem;
+    text-align: center;
+    padding: 1.5rem 0;
+  }
+
+  .alert {
+    font-size: .85rem;
+    color: var(--danger);
+    margin-top: .7rem;
+    padding: .6rem .8rem;
+    background: rgba(248, 113, 113, .08);
+    border: 1px solid rgba(248, 113, 113, .2);
+    border-radius: 8px;
+  }
+  .alert:empty { display: none; }
+
+  footer {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--text-mute);
+    font-size: .8rem;
+    border-top: 1px solid var(--border);
+    margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="logo">
+      <div class="logo-mark">⚙</div>
+      <div class="logo-text">
+        Kinematics
+        <small>physics calculator</small>
+      </div>
+    </div>
+    <div class="topbar-meta">v1.0</div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-label">Разделы</div>
+    <nav class="topic-list" id="topicList"></nav>
+  </aside>
+
+  <main class="content">
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title" id="sectionTitle"></div>
+          <div class="panel-desc" id="sectionDesc"></div>
+        </div>
+        <div class="badge" id="formulaCount"></div>
+      </div>
+
+      <div class="input-grid" id="inputGrid"></div>
+
+      <div class="actions">
+        <button class="btn btn-primary" onclick="calculate()">
+          Рассчитать <kbd>↵</kbd>
+        </button>
+        <button class="btn btn-ghost" onclick="clearInputs()">Очистить</button>
+      </div>
+
+      <div class="alert" id="errorBox"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Результаты</div>
+      </div>
+      <div id="results">
+        <p class="placeholder">Введите известные величины и нажмите «Рассчитать»</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  Кинематика · 8 разделов · 60+ формул
+</footer>
+
+<script>
+const TOPICS = [
+  /* ============ РАВНОМЕРНОЕ ============ */
+  {
+    id: 'uniform',
+    name: 'Равномерное',
+    desc: 'Постоянная скорость, ускорение равно нулю.',
+    fields: ['s', 't', 'v', 'v1', 'v2', 's_total', 't_total'],
+    formulas: [
+      { title: 'Скорость',   find: 'v', requires: ['s', 't'],               calc: x => x.s / x.t,     latex: 'v = s / t' },
+      { title: 'Путь',       find: 's', requires: ['v', 't'],               calc: x => x.v * x.t,     latex: 's = v · t' },
+      { title: 'Время',      find: 't', requires: ['s', 'v'],               calc: x => x.s / x.v,     latex: 't = s / v' },
+      { title: 'Средняя скорость', find: 'v', requires: ['s_total', 't_total'], calc: x => x.s_total / x.t_total, latex: 'v_ср = s_общ / t_общ' },
+      { title: 'Средняя скорость (равные пути)', find: 'v', requires: ['v1', 'v2'], calc: x => (2 * x.v1 * x.v2) / (x.v1 + x.v2), latex: 'v_ср = 2v₁v₂ / (v₁ + v₂)' }
+    ]
+  },
+
+  /* ============ РАВНОУСКОРЕННОЕ ============ */
+  {
+    id: 'accel',
+    name: 'Равноускоренное',
+    desc: 'Постоянное ускорение. a > 0 — разгон, a < 0 — торможение.',
+    fields: ['v0', 'v', 'a', 't', 's'],
+    formulas: [
+      { title: 'Скорость в момент t',   find: 'v',  requires: ['v0', 'a', 't'],     calc: x => x.v0 + x.a * x.t,                              latex: 'v = v₀ + a·t' },
+      { title: 'Начальная скорость',    find: 'v0', requires: ['v', 'a', 't'],      calc: x => x.v - x.a * x.t,                               latex: 'v₀ = v − a·t' },
+      { title: 'Ускорение',             find: 'a',  requires: ['v', 'v0', 't'],     calc: x => (x.v - x.v0) / x.t,                            latex: 'a = (v − v₀) / t' },
+      { title: 'Время',                 find: 't',  requires: ['v', 'v0', 'a'],     calc: x => (x.v - x.v0) / x.a,                            latex: 't = (v − v₀) / a' },
+      { title: 'Путь через время',      find: 's',  requires: ['v0', 'a', 't'],     calc: x => x.v0 * x.t + 0.5 * x.a * x.t * x.t,            latex: 's = v₀t + at²/2' },
+      { title: 'Путь через среднюю скорость', find: 's', requires: ['v0', 'v', 't'], calc: x => ((x.v0 + x.v) / 2) * x.t,                    latex: 's = (v₀ + v)/2 · t' },
+      { title: 'Путь без времени',      find: 's',  requires: ['v0', 'v', 'a'],     calc: x => (x.v * x.v - x.v0 * x.v0) / (2 * x.a),         latex: 's = (v² − v₀²) / (2a)' },
+      { title: 'Скорость без времени',  find: 'v',  requires: ['v0', 'a', 's'],     calc: x => Math.sqrt(Math.max(0, x.v0 * x.v0 + 2 * x.a * x.s)), latex: 'v = √(v₀² + 2as)' },
+      { title: 'Ускорение без времени', find: 'a',  requires: ['v', 'v0', 's'],     calc: x => (x.v * x.v - x.v0 * x.v0) / (2 * x.s),         latex: 'a = (v² − v₀²) / (2s)' }
+    ]
+  },
+
+  /* ============ СВОБОДНОЕ ПАДЕНИЕ ============ */
+  {
+    id: 'fall',
+    name: 'Свободное падение',
+    desc: 'Движение только под действием силы тяжести.',
+    fields: ['v0', 'v', 'h', 't', 'g'],
+    formulas: [
+      { title: 'Скорость при падении',  find: 'v', requires: ['g', 't'], calc: x => x.g * x.t,                  latex: 'v = g·t' },
+      { title: 'Скорость через высоту', find: 'v', requires: ['g', 'h'], calc: x => Math.sqrt(2 * x.g * x.h),   latex: 'v = √(2gh)' },
+      { title: 'Высота падения',        find: 'h', requires: ['g', 't'], calc: x => 0.5 * x.g * x.t * x.t,      latex: 'h = gt²/2' },
+      { title: 'Время падения',         find: 't', requires: ['g', 'h'], calc: x => Math.sqrt((2 * x.h) / x.g), latex: 't = √(2h/g)' },
+      { title: 'Высота через скорость', find: 'h', requires: ['g', 'v'], calc: x => (x.v * x.v) / (2 * x.g),    latex: 'h = v² / (2g)' }
+    ]
+  },
+
+  /* ============ БРОСОК ВВЕРХ ============ */
+  {
+    id: 'upward',
+    name: 'Бросок вверх',
+    desc: 'Вертикальный бросок с начальной скоростью v₀.',
+    fields: ['v0', 'v', 'h', 't', 'g'],
+    formulas: [
+      { title: 'Скорость в момент t', find: 'v', requires: ['v0', 'g', 't'], calc: x => x.v0 - x.g * x.t,                    latex: 'v = v₀ − g·t' },
+      { title: 'Высота в момент t',   find: 'h', requires: ['v0', 'g', 't'], calc: x => x.v0 * x.t - 0.5 * x.g * x.t * x.t,  latex: 'h = v₀t − gt²/2' },
+      { title: 'Максимальная высота', find: 'h', requires: ['v0', 'g'],      calc: x => (x.v0 * x.v0) / (2 * x.g),           latex: 'hₘₐₓ = v₀² / (2g)' },
+      { title: 'Время подъёма',       find: 't', requires: ['v0', 'g'],      calc: x => x.v0 / x.g,                          latex: 't = v₀ / g' },
+      { title: 'Полное время полёта', find: 't', requires: ['v0', 'g'],      calc: x => (2 * x.v0) / x.g,                    latex: 't = 2v₀ / g' }
+    ]
+  },
+
+  /* ============ БРОСОК ПОД УГОЛ ============ */
+  {
+    id: 'projectile',
+    name: 'Бросок под углом',
+    desc: 'Движение по параболе. Угол α — в радианах.',
+    fields: ['v0', 'alpha', 'g'],
+    formulas: [
+      { title: 'Дальность полёта',        find: 'L',  requires: ['v0', 'alpha', 'g'], calc: x => (x.v0 * x.v0 * Math.sin(2 * x.alpha)) / x.g,         latex: 'L = v₀²·sin(2α) / g' },
+      { title: 'Максимальная высота',     find: 'H',  requires: ['v0', 'alpha', 'g'], calc: x => (x.v0 * x.v0 * Math.sin(x.alpha) ** 2) / (2 * x.g), latex: 'H = v₀²·sin²α / (2g)' },
+      { title: 'Время полёта',            find: 't',  requires: ['v0', 'alpha', 'g'], calc: x => (2 * x.v0 * Math.sin(x.alpha)) / x.g,               latex: 't = 2v₀·sinα / g' },
+      { title: 'Горизонтальная скорость', find: 'vx', requires: ['v0', 'alpha'],      calc: x => x.v0 * Math.cos(x.alpha),                           latex: 'vₓ = v₀·cosα' },
+      { title: 'Вертикальная скорость',   find: 'vy', requires: ['v0', 'alpha'],      calc: x => x.v0 * Math.sin(x.alpha),                           latex: 'v_y = v₀·sinα' }
+    ]
+  },
+
+  /* ============ ОКРУЖНОСТЬ ============ */
+  {
+    id: 'circle',
+    name: 'Движение по окружности',
+    desc: 'Равномерное вращение. Связь линейных и угловых величин.',
+    fields: ['v', 'omega', 'R', 'T', 'n', 't', 'phi'],
+    formulas: [
+      { title: 'Линейная скорость',              find: 'v',     requires: ['omega', 'R'], calc: x => x.omega * x.R,           latex: 'v = ω·R' },
+      { title: 'Угловая скорость через период',  find: 'omega', requires: ['T'],          calc: x => (2 * Math.PI) / x.T,     latex: 'ω = 2π / T' },
+      { title: 'Угловая скорость через частоту', find: 'omega', requires: ['n'],          calc: x => 2 * Math.PI * x.n,       latex: 'ω = 2πn' },
+      { title: 'Период через частоту',           find: 'T',     requires: ['n'],          calc: x => 1 / x.n,                 latex: 'T = 1 / n' },
+      { title: 'Частота через период',           find: 'n',     requires: ['T'],          calc: x => 1 / x.T,                 latex: 'n = 1 / T' },
+      { title: 'Радиус через v и ω',             find: 'R',     requires: ['v', 'omega'], calc: x => x.v / x.omega,           latex: 'R = v / ω' },
+      { title: 'Угол поворота',                  find: 'phi',   requires: ['omega', 't'], calc: x => x.omega * x.t,           latex: 'φ = ω·t' },
+      { title: 'Период через ω',                 find: 'T',     requires: ['omega'],      calc: x => (2 * Math.PI) / x.omega, latex: 'T = 2π / ω' }
+    ]
+  },
+
+  /* ============ НАКЛОННАЯ ПЛОСКОСТЬ ============ */
+  {
+    id: 'incline',
+    name: 'Наклонная плоскость',
+    desc: 'Движение по плоскости с углом α (в радианах). μ — коэффициент трения.',
+    fields: ['alpha', 'mu', 'g', 'm', 'L', 'v0', 'v', 'a', 't', 'h', 'N', 'F', 'F_tr'],
+    formulas: [
+      { title: 'Ускорение (без трения)',       find: 'a',    requires: ['alpha', 'g'],              calc: x => x.g * Math.sin(x.alpha),                                          latex: 'a = g·sinα' },
+      { title: 'Ускорение (с трением, вниз)',  find: 'a',    requires: ['alpha', 'g', 'mu'],        calc: x => x.g * (Math.sin(x.alpha) - x.mu * Math.cos(x.alpha)),              latex: 'a = g·(sinα − μ·cosα)' },
+      { title: 'Ускорение (с трением, вверх)', find: 'a',    requires: ['alpha', 'g', 'mu'],        calc: x => -x.g * (Math.sin(x.alpha) + x.mu * Math.cos(x.alpha)),             latex: 'a = −g·(sinα + μ·cosα)' },
+      { title: 'Сила реакции опоры',           find: 'N',    requires: ['m', 'g', 'alpha'],         calc: x => x.m * x.g * Math.cos(x.alpha),                                    latex: 'N = m·g·cosα' },
+      { title: 'Сила трения',                  find: 'F_tr', requires: ['mu', 'N'],                 calc: x => x.mu * x.N,                                                       latex: 'F_тр = μ·N' },
+      { title: 'Сила трения (напрямую)',       find: 'F_tr', requires: ['mu', 'm', 'g', 'alpha'],   calc: x => x.mu * x.m * x.g * Math.cos(x.alpha),                              latex: 'F_тр = μ·m·g·cosα' },
+      { title: 'Скатывающая сила',             find: 'F',    requires: ['m', 'g', 'alpha'],         calc: x => x.m * x.g * Math.sin(x.alpha),                                    latex: 'F = m·g·sinα' },
+      { title: 'Равнодействующая (с трением, вниз)', find: 'F', requires: ['m', 'g', 'alpha', 'mu'], calc: x => x.m * x.g * (Math.sin(x.alpha) - x.mu * Math.cos(x.alpha)),     latex: 'F = m·g·(sinα − μ·cosα)' },
+      { title: 'Ускорение из сил',             find: 'a',    requires: ['F', 'm'],                  calc: x => x.F / x.m,                                                        latex: 'a = F / m' },
+      { title: 'Скорость без времени',         find: 'v',    requires: ['v0', 'a', 'L'],            calc: x => Math.sqrt(Math.max(0, x.v0 * x.v0 + 2 * x.a * x.L)),               latex: 'v = √(v₀² + 2aL)' },
+      { title: 'Пройденный путь',              find: 'L',    requires: ['v0', 'a', 't'],            calc: x => x.v0 * x.t + 0.5 * x.a * x.t * x.t,                               latex: 'L = v₀t + at²/2' },
+      { title: 'Путь без времени',             find: 'L',    requires: ['v0', 'v', 'a'],            calc: x => (x.v * x.v - x.v0 * x.v0) / (2 * x.a),                            latex: 'L = (v² − v₀²) / (2a)' },
+      { title: 'Скорость в момент t',          find: 'v',    requires: ['v0', 'a', 't'],            calc: x => x.v0 + x.a * x.t,                                                 latex: 'v = v₀ + a·t' },
+      { title: 'Время движения',               find: 't',    requires: ['v', 'v0', 'a'],            calc: x => (x.v - x.v0) / x.a,                                               latex: 't = (v − v₀) / a' },
+      { title: 'Высота через путь',            find: 'h',    requires: ['L', 'alpha'],              calc: x => x.L * Math.sin(x.alpha),                                          latex: 'h = L·sinα' },
+      { title: 'Длина через высоту',           find: 'L',    requires: ['h', 'alpha'],              calc: x => x.h / Math.sin(x.alpha),                                          latex: 'L = h / sinα' },
+      { title: 'Потенциальная энергия',        find: 'Ep',   requires: ['m', 'g', 'h'],             calc: x => x.m * x.g * x.h,                                                  latex: 'E_p = m·g·h' },
+      { title: 'Кинетическая энергия',         find: 'Ek',   requires: ['m', 'v'],                  calc: x => 0.5 * x.m * x.v * x.v,                                            latex: 'E_k = mv² / 2' }
+    ]
+  },
+
+  /* ============ ДИНАМИКА ============ */
+  {
+    id: 'dynamics',
+    name: 'Динамика',
+    desc: 'Законы Ньютона, силы, импульс, энергия.',
+    fields: ['m', 'a', 'F', 'mu', 'N', 'k', 'x', 'v', 'g', 'h'],
+    formulas: [
+      { title: 'Второй закон Ньютона',  find: 'F',  requires: ['m', 'a'],      calc: x => x.m * x.a,             latex: 'F = m·a' },
+      { title: 'Ускорение из силы',     find: 'a',  requires: ['F', 'm'],      calc: x => x.F / x.m,             latex: 'a = F / m' },
+      { title: 'Сила тяжести',          find: 'F',  requires: ['m', 'g'],      calc: x => x.m * x.g,             latex: 'F = m·g' },
+      { title: 'Сила трения',           find: 'F',  requires: ['mu', 'N'],     calc: x => x.mu * x.N,            latex: 'F_тр = μ·N' },
+      { title: 'Сила упругости',        find: 'F',  requires: ['k', 'x'],      calc: x => -x.k * x.x,            latex: 'F = −k·x' },
+      { title: 'Импульс',               find: 'p',  requires: ['m', 'v'],      calc: x => x.m * x.v,             latex: 'p = m·v' },
+      { title: 'Кинетическая энергия',  find: 'Ek', requires: ['m', 'v'],      calc: x => 0.5 * x.m * x.v * x.v, latex: 'E_k = mv² / 2' },
+      { title: 'Потенциальная энергия', find: 'Ep', requires: ['m', 'g', 'h'], calc: x => x.m * x.g * x.h,       latex: 'E_p = m·g·h' }
+    ]
+  }
+];
+
+const FIELD_META = {
+  s:       { label: 'Путь',                     unit: 'м' },
+  s_total: { label: 'Общий путь',               unit: 'м' },
+  L:       { label: 'Длина плоскости',          unit: 'м' },
+  t:       { label: 'Время',                    unit: 'с' },
+  t_total: { label: 'Общее время',              unit: 'с' },
+  v:       { label: 'Скорость',                 unit: 'м/с' },
+  v0:      { label: 'Начальная скорость',       unit: 'м/с' },
+  v1:      { label: 'Скорость v₁',              unit: 'м/с' },
+  v2:      { label: 'Скорость v₂',              unit: 'м/с' },
+  a:       { label: 'Ускорение',                unit: 'м/с²' },
+  g:       { label: 'Ускорение свободного падения', unit: 'м/с²', default: 9.81 },
+  h:       { label: 'Высота',                   unit: 'м' },
+  H:       { label: 'Максимальная высота',      unit: 'м' },
+  R:       { label: 'Радиус',                   unit: 'м' },
+  omega:   { label: 'Угловая скорость',         unit: 'рад/с' },
+  T:       { label: 'Период',                   unit: 'с' },
+  n:       { label: 'Частота',                  unit: 'Гц' },
+  alpha:   { label: 'Угол α',                   unit: 'рад' },
+  phi:     { label: 'Угол поворота',            unit: 'рад' },
+  m:       { label: 'Масса',                    unit: 'кг' },
+  F:       { label: 'Сила',                     unit: 'Н' },
+  F_tr:    { label: 'Сила трения',              unit: 'Н' },
+  N:       { label: 'Сила реакции опоры',       unit: 'Н' },
+  mu:      { label: 'Коэф. трения μ',           unit: '' },
+  k:       { label: 'Жёсткость',                unit: 'Н/м' },
+  x:       { label: 'Деформация',               unit: 'м' },
+  vx:      { label: 'Горизонтальная скорость',  unit: 'м/с' },
+  vy:      { label: 'Вертикальная скорость',    unit: 'м/с' },
+  p:       { label: 'Импульс',                  unit: 'кг·м/с' },
+  Ek:      { label: 'Кинетическая энергия',     unit: 'Дж' },
+  Ep:      { label: 'Потенциальная энергия',    unit: 'Дж' }
+};
+
+let currentTopicId = TOPICS[0].id;
+
+function buildNav() {
+  const nav = document.getElementById('topicList');
+  nav.innerHTML = TOPICS.map(t => `
+    <button class="topic-btn ${t.id === currentTopicId ? 'active' : ''}"
+            data-topic="${t.id}"
+            onclick="switchTopic('${t.id}')">
+      <span class="dot"></span>
+      ${t.name}
+    </button>
+  `).join('');
+}
+
+function switchTopic(id) {
+  currentTopicId = id;
+  document.querySelectorAll('.topic-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.topic === id);
+  });
+  renderTopic();
+  clearResults();
+}
+
+function renderTopic() {
+  const topic = TOPICS.find(t => t.id === currentTopicId);
+  document.getElementById('sectionTitle').textContent = topic.name;
+  document.getElementById('sectionDesc').textContent = topic.desc;
+  document.getElementById('formulaCount').textContent = topic.formulas.length + ' формул';
+
+  const grid = document.getElementById('inputGrid');
+  grid.innerHTML = '';
+
+  for (const key of topic.fields) {
+    const meta = FIELD_META[key];
+    if (!meta) continue;
+
+    const div = document.createElement('div');
+    div.className = 'field';
+    div.innerHTML = `
+      <label for="in_${key}">
+        <span>${meta.label}</span>
+        <span class="unit">${meta.unit || '—'}</span>
+      </label>
+      <input type="number" step="any" id="in_${key}" data-key="${key}"
+             value="${meta.default ?? ''}" placeholder="—">
+    `;
+    grid.appendChild(div);
+  }
+}
+
+function readInputs() {
+  const data = {};
+  document.querySelectorAll('#inputGrid input').forEach(inp => {
+    const raw = inp.value.trim();
+    if (raw === '') return;
+    const num = parseFloat(raw.replace(',', '.'));
+    if (!isNaN(num)) data[inp.dataset.key] = num;
+  });
+  return data;
+}
+
+function calculate() {
+  const known = readInputs();
+  const topic = TOPICS.find(t => t.id === currentTopicId);
+
+  if (Object.keys(known).length === 0) {
+    showError('Введите хотя бы одну величину.');
+    return;
+  }
+
+  const found = new Set(Object.keys(known));
+  const results = [];
+
+  for (let pass = 0; pass < 8; pass++) {
+    let added = false;
+    for (const f of topic.formulas) {
+      if (found.has(f.find)) continue;
+      const canApply = f.requires.every(k => k in known);
+      if (!canApply) continue;
+
+      let value;
+      try { value = f.calc(known); } catch (e) { continue; }
+      if (!isFinite(value) || isNaN(value)) continue;
+
+      known[f.find] = value;
+      found.add(f.find);
+      results.push({ title: f.title, find: f.find, value, latex: f.latex });
+      added = true;
+    }
+    if (!added) break;
+  }
+
+  if (results.length === 0) {
+    showError('Недостаточно данных для расчёта. Добавьте ещё величины.');
+    return;
+  }
+
+  clearError();
+  renderResults(results);
+}
+
+function renderResults(results) {
+  const box = document.getElementById('results');
+  box.innerHTML = '<div class="result-grid">' + results.map(r => {
+    const unit = FIELD_META[r.find]?.unit || '';
+    return `
+      <div class="result">
+        <div class="result-main">
+          <div class="result-title">${r.title}</div>
+          <div class="result-value">${formatNum(r.value)} <span class="unit">${unit}</span></div>
+          <div class="result-formula">${r.latex}</div>
+        </div>
+        <div class="result-var">${r.find}</div>
+      </div>
+    `;
+  }).join('') + '</div>';
+}
+
+function formatNum(x) {
+  if (Math.abs(x) < 1e-6 || Math.abs(x) > 1e6) return x.toExponential(3);
+  return Math.round(x * 1000) / 1000;
+}
+
+function clearResults() {
+  document.getElementById('results').innerHTML =
+    '<p class="placeholder">Введите известные величины и нажмите «Рассчитать»</p>';
+  clearError();
+}
+
+function clearInputs() {
+  document.querySelectorAll('#inputGrid input').forEach(inp => {
+    inp.value = inp.dataset.key === 'g' ? 9.81 : '';
+  });
+  clearResults();
+}
+
+function showError(msg) { document.getElementById('errorBox').textContent = msg; }
+function clearError() { document.getElementById('errorBox').textContent = ''; }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.tagName === 'INPUT') calculate();
+});
+
+buildNav();
+renderTopic();
+</script>
+</body>
+</html>
